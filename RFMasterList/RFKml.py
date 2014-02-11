@@ -16,13 +16,15 @@ class RFKml():
         Precious Degree = 5 (not suggest to change)
         Cell basic Radius = 1.265 km
         Radius Factor = 5 (Sector's radius / Circle's radius)
-        Sector Beamwidth = 35        
+        Sector Beamwidth = 35  
+        Cell color transparent = 6 (range from 0~F)      
         
         """
         self.preciousDeg = 5
         self.radius = 0.001265
         self.radiusFactor = 5
         self.beamwidth = 35
+        self.transparent = 6
 
         self.rules = dict()
 
@@ -30,10 +32,11 @@ class RFKml():
     def _calc_sec(self, _direction, _radius, _latlong):
         result = [0,0]
         try:
+            #Longitude, Latitude
             result[0] = _latlong[0] + _radius * sin(_direction/180.0*pi)
             result[1] = _latlong[1] + _radius * cos(_direction/180.0*pi)
         except:
-            print 'Calc Lat/long Error'
+            logging.debug('Calc Lat/long Error for %s %s %s' %(_direction, _radius, _latlong))
         finally:
             return result
         
@@ -76,16 +79,18 @@ class RFKml():
                     cell_type[rule_type[1]] = rule_value[str(cell_info[rule_type[0]]).split(".")[0]]
                 else:
                     cell_type[rule_type[1]] = rule_value[cell_info[rule_type[0]]]
-            logging.debug("Create cell type for %s : %s" %(cell_index, cell_type))
+            #logging.debug("Create cell type for %s : %s" %(cell_index, cell_type))
 
 
             if cell_info["Azimuth"] and cell_info["Latitude"] and cell_info["Longitude"]:
                 draw_cell = fol_cell.newpolygon(name = cell_index, \
                     outerboundaryis = self.calc_latlong(cell_type["Shape"], cell_info["Azimuth"], (cell_info["Longitude"],cell_info["Latitude"])),\
-                    description = str(cell_info) \
+                    description = "\n".join(str(cell_info).split(",")) \
                     )
-                draw_cell.stype = simplekml.Style(linestyle = simplekml.LineStyle(width =2, color = cell_type["Line Color"]),\
-                                polystyle = simplekml.PolyStyle(color = cell_type["Fill Color"]))
+                transferColor = lambda s: "ff"+s[1:] if s.find("#") != -1 else getattr(simplekml.Color, s)
+                draw_cell.style = simplekml.Style(linestyle = simplekml.LineStyle(width =2, color = str(self.transparent)+transferColor(cell_type["Line Color"])[1:]),\
+                                polystyle = simplekml.PolyStyle(color =str(self.transparent)+ transferColor(cell_type["Fill Color"])[1:]))
+                
             else:
                 logging.debug("Missing information for cell %s, create cell failed." % cell_index)
 
@@ -125,11 +130,11 @@ class RFKml():
 if __name__ == '__main__':
     rf_kml = RFKml()
     test = RFDataBase()
-    test.readFile("D:\\CODES\\Python\\RFMasterList\\RFMasterList\\RFMasterList\\Test File\\RF_MasterList20140207.xls")
+    test.readFile(".\\RF_MasterList20140207.xls")
     test.readSheet(0)
-    rules = {("EARFCN", "Fill Color"):{"1850":"Red", "2970":"Blue", "1800":"Green"},
+    rules = {("EARFCN", "Fill Color"):{"1850":"red", "2970":"blue", "1800":"green"},
             ("Type", "Shape"):{"Indoor":"Circle", "Outdoor":"Sector"},
-            ("PCI", "Line Color"):{"1":"Blue", "2":"Red", "0":"Yellow"}
+            ("PCI", "Line Color"):{"1":"blue", "2":"#dc143c", "0":"yellow"}
             }
     rf_kml.createRules(rules)
 
