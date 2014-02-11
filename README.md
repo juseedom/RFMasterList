@@ -9,6 +9,7 @@ What already done:
 
 What is doing:
 1) Integration test
+2) Opti format from Excel
 
 
 What to do:
