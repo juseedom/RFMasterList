@@ -123,9 +123,6 @@ class RFDataBase():
         return dedicate_value
 
 
-
-
-
     def Update2File(self):
         pass
             
