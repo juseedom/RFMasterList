@@ -54,7 +54,10 @@ class Ui_MainWindow(object):
         #self.tabWidget.setEnabled(True)
         self.tabWidget.setGeometry(QtCore.QRect(0, 0, 600, 420))
 
+
+        #initial Object
         self.RFDB = RFDataBase()
+        self.rf_kml = RFKml()
 
         self.tabWidget.addTab(self.tab_loading(), _fromUtf8(""))
         self.tab_setting()
@@ -70,13 +73,13 @@ class Ui_MainWindow(object):
         self.menuFile.setObjectName(_fromUtf8("menuFile"))
         MainWindow.setMenuBar(self.menubar)
         
-        self.statusbar = QtGui.QStatusBar(MainWindow)
-        self.statusbar.setObjectName(_fromUtf8("statusbar"))
-        MainWindow.setStatusBar(self.statusbar)
-        self.actionOpen = QtGui.QAction(MainWindow)
-        self.actionOpen.setObjectName(_fromUtf8("actionOpen"))
-        self.menuFile.addAction(self.actionOpen)
-        self.menubar.addAction(self.menuFile.menuAction())
+        #self.statusbar = QtGui.QStatusBar(MainWindow)
+        #self.statusbar.setObjectName(_fromUtf8("statusbar"))
+        #MainWindow.setStatusBar(self.statusbar)
+        #self.actionOpen = QtGui.QAction(MainWindow)
+        #self.actionOpen.setObjectName(_fromUtf8("actionOpen"))
+        #self.menuFile.addAction(self.actionOpen)
+        #self.menubar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
@@ -90,7 +93,7 @@ class Ui_MainWindow(object):
         self.qpb_add.setText(_translate("MainWindow", "Add", None))
         self.tabWidget.setTabText(1, _translate("MainWindow", "Setting", None))
         self.menuFile.setTitle(_translate("MainWindow", "File", None))
-        self.actionOpen.setText(_translate("MainWindow", "Open", None))
+        #self.actionOpen.setText(_translate("MainWindow", "Open", None))
         self.qpb_calc.setText(_translate("MainWindow", "Calc", None))
         self.tabWidget.setTabText(2, _translate("MainWindow", "Calc", None))
         #testing
@@ -157,8 +160,8 @@ class Ui_MainWindow(object):
 
             self.setTable.clear()
 
-            self.rules[("EARFCN", "Fill Color")] = dict().fromkeys(self.cell_item["EARFCN"], "Blue")
-            self.rules[("PCI", "Line Color")] = dict().fromkeys(self.cell_item["PCI"], "Blue")
+            self.rules[("EARFCN", "Fill Color")] = dict().fromkeys(self.cell_item["EARFCN"], "blue")
+            self.rules[("PCI", "Line Color")] = dict().fromkeys(self.cell_item["PCI"], "blue")
             self.rules[("Type", "Shape")] = dict(zip(self.cell_item["Type"],self.kml_item["Shape"]))
 
 
@@ -233,29 +236,22 @@ class Ui_MainWindow(object):
         #setting for tab_set        
         self.tab_set = QtGui.QWidget()
         self.kml_rules = dict()
-        #self.tab_set.setObjectName(_fromUtf8("tab_set"))
         label = QtGui.QLabel(self.tab_set)
         label.setGeometry(QtCore.QRect(20, 20, 150, 20))
-        #label.setObjectName(_fromUtf8("label"))
         label.setText(_translate("MainWindow", "Distinguish Cell", None))
         
         qcb_type = QtGui.QComboBox(self.tab_set)
         qcb_type.setGeometry(QtCore.QRect(380, 20, 75, 20))
-        #qcb_type.setObjectName(_fromUqcb_type"))
 
         label_2 = QtGui.QLabel(self.tab_set)
         label_2.setGeometry(QtCore.QRect(220, 20, 150, 20))
-        #label_2.setObjectName(_fromUtf8("label_2"))
         label_2.setText(_translate("MainWindow", "according to different", None))
         
         qcb_value = QtGui.QComboBox(self.tab_set)
         qcb_value.setGeometry(QtCore.QRect(130, 20, 75, 20))
-        #qcb_value.setObjectName(_fromUqcb_value"))
         
         self.qpb_add = QtGui.QPushButton(self.tab_set)
         self.qpb_add.setGeometry(QtCore.QRect(500, 20, 75, 20))
-        #self.qpb_add.setObjectName(_fromUtf8("qpb_add"))
-        
 
         KML_options = ['Shape','Line Color', 'Shape Color']
         RF_type = ['Type','Mod(PCI,3)','EARFCN']
@@ -266,9 +262,6 @@ class Ui_MainWindow(object):
         self.setTable.horizontalHeader().setVisible(False)
         self.setTable.verticalHeader().setVisible(True)
         self.setTable.setGeometry(QtCore.QRect(40, 50, 500, 200))
-        #self.setTable.setObjectName(_fromUtf8("setTable"))
-
-        
         
         self.tabWidget.addTab(self.tab_set, _fromUtf8(""))
         #self.tabWidget.setTabEnabled(1,False)
@@ -328,8 +321,10 @@ class Ui_MainWindow(object):
         rule_value.update(new_value)
 
 
+
     def tab_set_remove(self,i):
-        self.setTable.removeRow(i)
+        #self.setTable.removeRow(i)
+        pass
     def tab_set_add(self):
         pass
 
@@ -346,13 +341,14 @@ class Ui_MainWindow(object):
         self.textBrowser.setObjectName(_fromUtf8("textBrowser"))
         self.tabWidget.addTab(self.tab_calc, _fromUtf8(""))
 
-        self.rf_kml = RFKml()
+        
 
         self.qpb_calc.clicked.connect(self.calc)
 
 
     def calc(self):
         #try:
+        
         self.rf_kml.createRules(self.rules)
         self.rf_kml.createCells(self.RFDB.DB, self.map_title)
             #tittle.append(self.excelMatchtable.item(i,1).currentText())
