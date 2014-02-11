@@ -48,6 +48,8 @@ sip.setapi('QVariant', 2)
 
 from functools import partial
 from PyQt4 import QtCore, QtGui
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class ColorListEditor(QtGui.QComboBox):
@@ -100,7 +102,7 @@ class Window(QtGui.QWidget):
             nameItem = QtGui.QTableWidgetItem(rf_value)
             if dictData[rf_value]:
                 colorItem = QtGui.QTableWidgetItem()
-                colorItem.setData(QtCore.Qt.DisplayRole, dictData[rf_value])
+                colorItem.setData(QtCore.Qt.DisplayRole, QtGui.QColor(dictData[rf_value]))
             else:
                 colorItem = QtGui.QTableWidgetItem()
                 colorItem.setData(QtCore.Qt.DisplayRole, QtGui.QColor('aliceblue'))
@@ -122,6 +124,7 @@ class Window(QtGui.QWidget):
         rf_value = str(self.table.item(irow,0).text())
         #change Qtext to Qcolor later
         dictData.update({rf_value: str(self.table.item(irow,1).text())})
+        logging.debug(dictData)
 
 
 if __name__ == '__main__':
