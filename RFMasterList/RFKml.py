@@ -27,6 +27,8 @@ class RFKml():
         self.transparent = 6
 
         self.rules = dict()
+        
+        self.supportOptions = (("EARFCN", "PCI", "Type"), ("Shape", "Fill Color", "Line Color"))
 
     
     def _calc_sec(self, _direction, _radius, _latlong):

@@ -7,6 +7,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 keywords = ('Index','eNodeB Id','Lat','Long', 'Cell Id', 'Sector Id','EARFCN','TAL','TAI')
 
 
+
 class RFDataBase():
     """Define a Object for RF Data Base
     
@@ -15,6 +16,7 @@ class RFDataBase():
     """
     def __init__(self):
         self.DB = dict()
+        self.RFIndex = ['Index','eNodeB Id','Latitude','Longitude','Sector Id','Cell Id','EARFCN','Azimuth','Type','PCI', 'TAI']
 
             
     def readFile(self, filepath):
@@ -93,6 +95,14 @@ class RFDataBase():
          #format type (not suggested)
 
         return self.str_title
+    
+    def checkData(self):
+        """check data's corrections
+        1) Null values;
+        2) Data Type: int, float, str
+        
+        """
+        pass
 
 
     def loadMappingTitle(self, title):

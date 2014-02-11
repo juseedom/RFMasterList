@@ -33,8 +33,6 @@ from RFKml import RFKml
 import coloreditorfactory
 
 
-tableData = ['Index','eNodeB Id','Latitude','Longitude','Sector Id','Cell Id','EARFCN','Azimuth','Type','PCI']
-
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
@@ -56,15 +54,19 @@ class Ui_MainWindow(object):
 
 
         #initial Object
+        self.int_status = 0
         self.RFDB = RFDataBase()
         self.rf_kml = RFKml()
+        #create a map between formatted keyword with Excel title {RFIndex:ExcelTitle}
+        self.map_title = dict()
+        self.map_title.fromkeys(self.RFDB.RFIndex)
+        self.rules = dict()
 
         self.tabWidget.addTab(self.tab_loading(), _fromUtf8(""))
         self.tab_setting()
         self.tab_calculating()
 
-        self.tabWidget.currentChanged.connect(partial(self.Option_Analysis,2))
-        
+                
         MainWindow.setCentralWidget(self.centralwidget)        
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 600, 18))
@@ -87,10 +89,8 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(_translate("MainWindow", "Excel2KMZ", None))
-        self.tabWidget.setTabText(0, _translate("MainWindow", "LoadExcel", None))
+        self.tabWidget.setTabText(0, _translate("MainWindow", "LoadExcel", None))        
         
-        
-        self.qpb_add.setText(_translate("MainWindow", "Add", None))
         self.tabWidget.setTabText(1, _translate("MainWindow", "Setting", None))
         self.menuFile.setTitle(_translate("MainWindow", "File", None))
         #self.actionOpen.setText(_translate("MainWindow", "Open", None))
@@ -102,7 +102,7 @@ class Ui_MainWindow(object):
        
     def tab_loading(self):
         tab_load = QtGui.QWidget()
-        tab_load.setObjectName(_fromUtf8("tab_load"))
+        #tab_load.setObjectName(_fromUtf8("tab_load"))
         #setting for tab_load
         str_file = QtGui.QLineEdit(tab_load)
         str_file.setGeometry(QtCore.QRect(10, 10, 300, 20))
@@ -118,111 +118,117 @@ class Ui_MainWindow(object):
         qpb_browse.clicked.connect(partial(self.browseFile, tab_load, str_file, cob_sheet))
         qpb_browse.setText(_translate("MainWindow", "Browse", None))
         #qpb_browse.setObjectName(_fromUtf8("qpb_browse"))
-
-        excelMatchtable = QtGui.QTableWidget(len(tableData),2, tab_load)
-        excelMatchtable.setHorizontalHeaderLabels(["Keywords", "Column"])
-        excelMatchtable.verticalHeader().setVisible(False)
-        excelMatchtable.setGeometry(QtCore.QRect(10, 40, 561, 311))
-        excelMatchtable.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
-        #excelMatchtable.setObjectName(_fromUtf8("excelMatchtable"))
+        
+        tableData = self.RFDB.RFIndex
+        tbl_mTitle = QtGui.QTableWidget(len(tableData),2, tab_load)
+        tbl_mTitle.setHorizontalHeaderLabels(["Keywords", "Column"])
+        tbl_mTitle.verticalHeader().setVisible(False)
+        tbl_mTitle.setGeometry(QtCore.QRect(10, 40, 561, 311))
+        tbl_mTitle.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+        #tbl_mTitle.setObjectName(_fromUtf8("tbl_mTitle"))
         #self.comboTittle = QtGui.QComboBox()
         for i, keywords in enumerate(tableData):
             kwItem = QtGui.QTableWidgetItem(keywords)
-            vlItem = QtGui.QTableWidgetItem('...')
-            excelMatchtable.setItem(i,0,kwItem)
-            excelMatchtable.setItem(i,1,vlItem)
+            tbl_mTitle.setItem(i,0,kwItem)
+            tbl_mTitle.setItem(i,1,QtGui.QTableWidgetItem('...'))
         
-        excelMatchtable.resizeColumnToContents(1)
-        excelMatchtable.horizontalHeader().setStretchLastSection(True)
+        tbl_mTitle.resizeColumnToContents(1)
+        tbl_mTitle.horizontalHeader().setStretchLastSection(True)
 
         qpb_analysis = QtGui.QPushButton(tab_load)
         qpb_analysis.setGeometry(QtCore.QRect(505, 10, 75, 20))
-        qpb_analysis.clicked.connect(partial(self.updateTable, cob_sheet, excelMatchtable))
+        qpb_analysis.clicked.connect(partial(self.readSheet, cob_sheet, tbl_mTitle))
         #qpb_analysis.setObjectName(_fromUtf8("qpb_analysis"))
         qpb_analysis.setText(_translate("MainWindow", "Analysis", None))
-
-
         return tab_load
-    def Option_Analysis(self, i):
-        if self.tabWidget.currentIndex() == 1:
-            self.cell_item = dict()
+    
+    
+    def defaultOptions(self, setTable):
+        if self.tabWidget.currentIndex() == 1 and self.int_status == 12:
+            #build default rules
+            rf_item = dict()
             #change to tab_setting, do KPI statistics now
-            self.cell_item["EARFCN"] = self.RFDB.DBStatistics("EARFCN")
-            self.cell_item["Type"] = self.RFDB.DBStatistics("Type")
-            self.cell_item["PCI"] = ['0', '1', '2']
+            rf_item["EARFCN"] = self.RFDB.DBStatistics("EARFCN")
+            rf_item["Type"] = self.RFDB.DBStatistics("Type")
+            rf_item["PCI"] = ['0', '1', '2']
 
-            self.kml_item = dict()
-            self.kml_item["Shape"] = ("Sector", "Circle")
-            self.kml_item["Line Color"] = list()
-            self.kml_item["Fill Color"] = list()
+            kml_item = dict()
+            kml_item["Shape"] = ("Sector", "Circle")
+            kml_item["Line Color"] = list()
+            kml_item["Fill Color"] = list()
 
             self.rules = dict()
+            
+            self.rules[("EARFCN", "Fill Color")] = dict().fromkeys(rf_item["EARFCN"], "blue")
+            self.rules[("PCI", "Line Color")] = dict().fromkeys(rf_item["PCI"], "blue")
+            self.rules[("Type", "Shape")] = dict(zip(rf_item["Type"],kml_item["Shape"]))
+            self.updateRuleTable(setTable)
 
-            self.setTable.clear()
+    def updateRuleTable(self, setTable):
+        setTable.clear()
+        for i, rule in enumerate(self.rules):
+            kml_Item = QtGui.QTableWidgetItem(rule[1])
+            rf_Item = QtGui.QTableWidgetItem(rule[0])
+            pub_options = QtGui.QPushButton('...')
+            pub_options.clicked.connect(partial(self.tab_set_options, rule, self.rules[rule]))
+            pub_remove = QtGui.QPushButton('Remove')
+            pub_remove.clicked.connect(partial(self.tab_set_remove,i))
+            setTable.setItem(i,0,rf_Item)
+            setTable.setItem(i,1,kml_Item)
+            setTable.setCellWidget(i,2,pub_options)
+            setTable.setCellWidget(i,3,pub_remove)
+        setTable.resizeColumnToContents(1)
 
-            self.rules[("EARFCN", "Fill Color")] = dict().fromkeys(self.cell_item["EARFCN"], "blue")
-            self.rules[("PCI", "Line Color")] = dict().fromkeys(self.cell_item["PCI"], "blue")
-            self.rules[("Type", "Shape")] = dict(zip(self.cell_item["Type"],self.kml_item["Shape"]))
-
-
-            for i, rule in enumerate(self.rules):
-                #cell_type = rule[0]
-                #kml_type = rule[1]
-                print rule
-                kml_Item = QtGui.QTableWidgetItem(rule[1])
-                rf_Item = QtGui.QTableWidgetItem(rule[0])
-
-                pub_options = QtGui.QPushButton('...')
-                pub_options.clicked.connect(partial(self.tab_set_options, rule, self.rules[rule]))
-                pub_remove = QtGui.QPushButton('Remove')
-                pub_remove.clicked.connect(partial(self.tab_set_remove,i))
-
-                self.setTable.setItem(i,0,rf_Item)
-                #self.setTable.setColumnWidth(0,205)
-                self.setTable.setItem(i,1,kml_Item)
-                #self.setTable.setColumnWidth(1,205)
-                self.setTable.setCellWidget(i,2,pub_options)
-                #self.setTable.setColumnWidth(2,20)
-                self.setTable.setCellWidget(i,3,pub_remove)
-                #self.setTable.setColumnWidth(3,50)
-            self.setTable.resizeColumnToContents(1)
-
-    def updateTable(self, cob_sheet, excelMatchtable):
+    def readSheet(self, cob_sheet, tbl_mTitle):
         #self.RFDB.readSheet
+        if self.int_status < 4:
+            msgBox = QtGui.QMessageBox()
+            msgBox.setWindowTitle("Warning")
+            msgBox.setText("Please choose Excel First!")
+            msgBox.exec_()
+            return False          
         if self.RFDB.readSheet(cob_sheet.currentIndex()):
-            strTitle = self.RFDB.str_title
-            self.map_title = dict()
+            strTitle = self.RFDB.str_title            
+            #read title successfully
+            self.int_status = 8
         else:
-            print "Read file Failed."
-        for i_row in range(excelMatchtable.rowCount()):
-            str_match = str(excelMatchtable.item(i_row, 0).text())
+            msgBox = QtGui.QMessageBox()
+            msgBox.setWindowTitle("Warning")
+            msgBox.setText("Cannot find any match keyword title from selected Sheet \
+            \n your title must contain at least one of below:\n \
+            %s" ";".join(self.RFDB.RFIndex))
+            msgBox.exec_()
+            return False
+        for i_row in range(len(self.RFDB.RFIndex)):
+            str_match = self.RFDB.RFIndex[i_row]
             comboTittle = QtGui.QComboBox()
             comboTittle.addItems(strTitle)
             try:
                 index_match = strTitle.index(difflib.get_close_matches(str_match,strTitle)[0])
-            except IndexError:
-                index_match = -1            
-            if index_match!=-1:
+                #find the matched title
                 comboTittle.setCurrentIndex(index_match)
-                excelMatchtable.item(i_row, 0).setBackgroundColor(QtGui.QColor(0,255,13))
-                self.map_title[str_match] = strTitle[index_match]
-            excelMatchtable.setCellWidget(i_row, 1, comboTittle)
-            comboTittle.currentIndexChanged.connect(partial(self.updateOptionTable, self.map_title, str_match, comboTittle))
-                
+                tbl_mTitle.item(i_row, 0).setBackgroundColor(QtGui.QColor(0,255,13))
+            except IndexError:
+                index_match = -1
+            tbl_mTitle.setCellWidget(i_row, 1, comboTittle)
+            comboTittle.currentIndexChanged.connect(partial(self.updateTable, self.map_title, str_match, comboTittle))
+               
         self.tabWidget.setTabEnabled(1,True)
+        self.int_status = 12
 
     
     def browseFile(self, tab_load, str_file, cob_sheet):
-        fileName = QtGui.QFileDialog.getOpenFileName(tab_load,"Open File",'.',"Excel File (*.xlsx *.xls);;All File (*)")    
+        fileName = QtGui.QFileDialog.getOpenFileName(tab_load,"Open File",'.',"Excel File (*.xlsx *.xls)")    
         #if RFDB.readSheet:
-        str_shnames = False
-        if fileName:
-            str_shnames = self.RFDB.readFile(fileName)
+        if not fileName:
+            return False
+        str_shnames = self.RFDB.readFile(fileName)
         if str_shnames:
             str_file.setText(fileName)
-            self.tabWidget.setTabEnabled(1,False)
+            #self.tabWidget.setTabEnabled(1,False)
             #self.excelFile = excelAnalysis(str(str_file.text())) 
-            cob_sheet.clear()     
+            cob_sheet.clear()
+            self.int_status = 4
             cob_sheet.addItems(str_shnames)
             #cob_sheet.setCurrentIndex(-1)
             #self.updateTable(strTitle)
@@ -231,6 +237,7 @@ class Ui_MainWindow(object):
             msgBox.setWindowTitle("Warning")
             msgBox.setText("Open Excel Failed!")
             msgBox.exec_()
+            return False
 
     def tab_setting(self):
         #setting for tab_set        
@@ -250,20 +257,23 @@ class Ui_MainWindow(object):
         qcb_value = QtGui.QComboBox(self.tab_set)
         qcb_value.setGeometry(QtCore.QRect(130, 20, 75, 20))
         
-        self.qpb_add = QtGui.QPushButton(self.tab_set)
-        self.qpb_add.setGeometry(QtCore.QRect(500, 20, 75, 20))
-
-        KML_options = ['Shape','Line Color', 'Shape Color']
-        RF_type = ['Type','Mod(PCI,3)','EARFCN']
+        KML_options = self.rf_kml.supportOptions[1]
+        RF_type = self.rf_kml.supportOptions[0]
         qcb_type.addItems(KML_options)
         qcb_value.addItems(RF_type)
-
-        self.setTable = QtGui.QTableWidget(3,4,self.tab_set)
-        self.setTable.horizontalHeader().setVisible(False)
-        self.setTable.verticalHeader().setVisible(True)
-        self.setTable.setGeometry(QtCore.QRect(40, 50, 500, 200))
-        
+        #need to update this value after changed default rule number
+        setTable = QtGui.QTableWidget(3,4,self.tab_set)
+        setTable.horizontalHeader().setVisible(False)
+        setTable.verticalHeader().setVisible(True)
+        setTable.setGeometry(QtCore.QRect(40, 50, 500, 200))
         self.tabWidget.addTab(self.tab_set, _fromUtf8(""))
+        self.tabWidget.currentChanged.connect(partial(self.defaultOptions, setTable))
+        
+        qpb_add = QtGui.QPushButton(self.tab_set)
+        qpb_add.setGeometry(QtCore.QRect(500, 20, 75, 20))
+        qpb_add.setText(_translate("MainWindow", "Add", None))
+        qpb_add.clicked.connect(partial(self.updateRuleTable, setTable))        
+        
         #self.tabWidget.setTabEnabled(1,False)
 
     def tab_set_options(self, rule, rule_value):
@@ -306,7 +316,7 @@ class Ui_MainWindow(object):
                 shape_table.setItem(i, 0, nameItem)
                 shape_table.setCellWidget(i, 1, comboShape)
 
-                comboShape.currentIndexChanged.connect(partial(self.updateOptionTable, rule_value, rf_value, comboShape))
+                comboShape.currentIndexChanged.connect(partial(self.updateTable, rule_value, rf_value, comboShape))
 
             #shape_table.resizeColumnToContents(True)
             #shape_table.horizontalHeader().setStretchLastSection(True)
@@ -316,9 +326,9 @@ class Ui_MainWindow(object):
             shape_dialog.exec_()
 
 
-    def updateOptionTable(self, rule_value, rf_value, comboShape):
-        new_value = {rf_value:str(comboShape.currentText())}
-        rule_value.update(new_value)
+    def updateTable(self, str_dict, str_key, comboxObj):
+        new_value = {str_key:str(comboxObj.currentText())}
+        str_dict.update(new_value)
 
 
 
@@ -351,8 +361,8 @@ class Ui_MainWindow(object):
         
         self.rf_kml.createRules(self.rules)
         self.rf_kml.createCells(self.RFDB.DB, self.map_title)
-            #tittle.append(self.excelMatchtable.item(i,1).currentText())
-            #tittle[tableData[i]] = self.strTitle.index(self.excelMatchtable.cellWidget(i,1).currentText())
+            #tittle.append(self.tbl_mTitle.item(i,1).currentText())
+            #tittle[tableData[i]] = self.strTitle.index(self.tbl_mTitle.cellWidget(i,1).currentText())
         #self.excelFile.matchTitle(tittle, 'eNodeB Id')
         #self.excelFile.generateKML()
         #except:
