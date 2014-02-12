@@ -42,72 +42,57 @@ class RFDataBase():
             else:
                 return False
 
-    def readSheet(self, sheet_index = 0):
+    def readTitle(self, sheet_index = 0):
         """Auto match the title rows according to keyword
         transfer RF data from workbook into dict"""
-        rf_sheet = self.rf_wb.sheet_by_index(sheet_index)
+        self.rf_sheet = self.rf_wb.sheet_by_index(sheet_index)
         
         #find the title according to keywords from first 5 rows
-        start_row = 0
+        self.start_row = 0
         max_match = 0
         
         for i in range(5):
             s = 0
-            str_match = [str(rf_sheet.row_values(i)[x]) for x in range(len(rf_sheet.row_values(i)))]
+            str_match = [str(self.rf_sheet.row_values(i)[x]) for x in range(len(self.rf_sheet.row_values(i)))]
             for key in keywords:
                 a = get_close_matches(key,str_match)
                 s += len(a)
             if s > max_match:
-                start_row = i
+                self.start_row = i
                 max_match = s
 
-        logging.debug("Found Title on row %i according to keyword match." %(start_row+1))
+        logging.debug("Found Title on row %i according to keyword match." %(self.start_row+1))
+        self.str_title = self.rf_sheet.row_values(self.start_row)
         
+        return self.str_title
+        
+    def readSheet(self, table_title):
         #read title
         #match index or cell name and check duplicate
-        self.str_title = rf_sheet.row_values(start_row)
-        title_index = -1
-        for i in ("Index", "CellName"):
-            a = get_close_matches(i, self.str_title)            
-            if a:
-                title_index = self.str_title.index(a[0])
-                str_index = rf_sheet.col_values(title_index)[start_row+1:]                
-                if [b for b in str_index if str_index.count(b)>1]:
-                    title_index = -1
-                    logging.debug("This Column %i cannot be index value as some are duplicated." %title_index)
-                else:
-                    logging.debug("Found Column %i can be index value" %title_index)
-                    break
-            else:
-                logging.debug("Cannot find title name match with %s." %i)
-                
-        if title_index != -1:
-            raw_data = dict()
-            for i in range(start_row+1, rf_sheet.nrows):
-                raw_value = rf_sheet.row_values(i)
-                raw_data = dict(zip(self.str_title, raw_value))
-                str_index = rf_sheet.cell(i, title_index).value
-                self.DB[str_index] = raw_data
-            logging.debug(len(self.DB))
+        #transfer all number to float, str otherwise        
+        title_index = self.str_title.index(table_title["Index"])
+        str_index = self.rf_sheet.col_values(title_index)[self.start_row+1:]
+        if [b for b in str_index if str_index.count(b)>1]:
+            title_index = -1
+            logging.debug("This Column %i cannot be index value as some are duplicated." %table_title["Index"])
+            return False
         else:
-            logging.debug("Cannot find the index")
+            logging.debug("Selected Column %s can be index value" %table_title["Index"])   
         
-         #format type (not suggested)
+        logging.debug("Start to read RF Data into DB")     
+        raw_data = dict()
+        for i in range(self.start_row+1, self.rf_sheet.nrows):
+            raw_value = self.rf_sheet.row_values(i)
+            raw_value = [float(a) if str(a).replace(".","",1).isdigit() else str(a) for a in raw_value]
+            raw_data = dict(zip(self.str_title, raw_value))
+            str_index = self.rf_sheet.cell(i, title_index).value
+            self.DB[str_index] = raw_data
 
-        return self.str_title
+        logging.debug("Load %i LTE Cells" %len(self.DB))
+
+        #format type (not suggested)
     
-    def checkData(self):
-        """check data's corrections
-        1) Null values;
-        2) Data Type: int, float, str
-        
-        """
-        pass
-
-
-    def loadMappingTitle(self, title):
-        self.mapTitle = dict()
-        
+       
 
 
     def DBStatistics(self, dedicate_index):
@@ -122,13 +107,13 @@ class RFDataBase():
         """
 
         logging.debug("Start to statistics for %s" %dedicate_index)
-        dedicate_value = set([str(raw_data[dedicate_index]) for raw_data in self.DB.values()])
+        dedicate_value = set([raw_data[dedicate_index] for raw_data in self.DB.values()])
         
 
-        if dedicate_index == "EARFCN":
-            logging.debug("Start to stransfer All EARFCN value into Float")
+        if dedicate_index in ("EARFCN"):
+            logging.debug("Start to stransfer All EARFCN value into int")
             #dedicate_value = set([float(i) for i in dedicate_value])
-            dedicate_value = set([i.split('.')[0] for i in dedicate_value])
+            dedicate_value = set([str(int(i)) for i in dedicate_value])
 
         return dedicate_value
 
@@ -141,8 +126,12 @@ class RFDataBase():
 
 
 if __name__ == "__main__":
-    test = RFDataBase("D:\\CODES\\Python\\RFMasterList\\RFMasterList\\RFMasterList\\Test File\\RF_MasterList20140207.xls")
-    print test.DBStatistics("SiteAddress")
+    test = RFDataBase()
+    test.readFile('/home/juseedom/Downloads/RF_MasterList20140207.xls')
+    test.readTitle(0)
+    test.readSheet({"Index":"index","EARFCN":"EARFCN"})
+    #test = RFDataBase("D:\\CODES\\Python\\RFMasterList\\RFMasterList\\RFMasterList\\Test File\\RF_MasterList20140207.xls")
+    #print test.DBStatistics("SiteAddress")
     
 
     

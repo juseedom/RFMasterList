@@ -96,13 +96,10 @@ class Ui_MainWindow(object):
         #self.actionOpen.setText(_translate("MainWindow", "Open", None))
         self.qpb_calc.setText(_translate("MainWindow", "Calc", None))
         self.tabWidget.setTabText(2, _translate("MainWindow", "Calc", None))
-        #testing
-        
-        #D:/RNP&RNO/ENGINEER/Parameters/RF Parameter/20131206/RF_MasterList20131206.xls
+
        
     def tab_loading(self):
         tab_load = QtGui.QWidget()
-        #tab_load.setObjectName(_fromUtf8("tab_load"))
         #setting for tab_load
         str_file = QtGui.QLineEdit(tab_load)
         str_file.setGeometry(QtCore.QRect(10, 10, 300, 20))
@@ -137,7 +134,7 @@ class Ui_MainWindow(object):
 
         qpb_analysis = QtGui.QPushButton(tab_load)
         qpb_analysis.setGeometry(QtCore.QRect(505, 10, 75, 20))
-        qpb_analysis.clicked.connect(partial(self.readSheet, cob_sheet, tbl_mTitle))
+        qpb_analysis.clicked.connect(partial(self.readTitle, cob_sheet, tbl_mTitle))
         #qpb_analysis.setObjectName(_fromUtf8("qpb_analysis"))
         qpb_analysis.setText(_translate("MainWindow", "Analysis", None))
         return tab_load
@@ -147,6 +144,9 @@ class Ui_MainWindow(object):
         if self.tabWidget.currentIndex() == 1 and self.int_status == 12:
             #build default rules
             rf_item = dict()
+            #read RFDB
+            print self.map_title
+            self.RFDB.readSheet(self.map_title)
             #change to tab_setting, do KPI statistics now
             rf_item["EARFCN"] = self.RFDB.DBStatistics("EARFCN")
             rf_item["Type"] = self.RFDB.DBStatistics("Type")
@@ -179,7 +179,7 @@ class Ui_MainWindow(object):
             setTable.setCellWidget(i,3,pub_remove)
         setTable.resizeColumnToContents(1)
 
-    def readSheet(self, cob_sheet, tbl_mTitle):
+    def readTitle(self, cob_sheet, tbl_mTitle):
         #self.RFDB.readSheet
         if self.int_status < 4:
             msgBox = QtGui.QMessageBox()
@@ -187,7 +187,7 @@ class Ui_MainWindow(object):
             msgBox.setText("Please choose Excel First!")
             msgBox.exec_()
             return False          
-        if self.RFDB.readSheet(cob_sheet.currentIndex()):
+        if self.RFDB.readTitle(cob_sheet.currentIndex()):
             strTitle = self.RFDB.str_title            
             #read title successfully
             self.int_status = 8
@@ -198,13 +198,15 @@ class Ui_MainWindow(object):
             \n your title must contain at least one of below:\n \
             %s" ";".join(self.RFDB.RFIndex))
             msgBox.exec_()
-            return False
+            return False        
         for i_row in range(len(self.RFDB.RFIndex)):
             str_match = self.RFDB.RFIndex[i_row]
             comboTittle = QtGui.QComboBox()
             comboTittle.addItems(strTitle)
             try:
-                index_match = strTitle.index(difflib.get_close_matches(str_match,strTitle)[0])
+                str_matched = difflib.get_close_matches(str_match,strTitle)[0]
+                index_match = strTitle.index(str_matched)
+                self.map_title[str_match] = str_matched 
                 #find the matched title
                 comboTittle.setCurrentIndex(index_match)
                 tbl_mTitle.item(i_row, 0).setBackgroundColor(QtGui.QColor(0,255,13))

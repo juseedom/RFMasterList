@@ -84,7 +84,8 @@ class RFKml():
             #logging.debug("Create cell type for %s : %s" %(cell_index, cell_type))
 
 
-            if cell_info["Azimuth"] and cell_info["Latitude"] and cell_info["Longitude"]:
+            if cell_info["Latitude"] and cell_info["Longitude"]:
+                
                 draw_cell = fol_cell.newpolygon(name = cell_index, \
                     outerboundaryis = self.calc_latlong(cell_type["Shape"], cell_info["Azimuth"], (cell_info["Longitude"],cell_info["Latitude"])),\
                     description = "\n".join(str(cell_info).split(",")) \
@@ -99,6 +100,8 @@ class RFKml():
         kml.savekmz('D:\\123.kmz')
 
     def calc_latlong(self, _shape = 'Circle', _direction = 0, _latlong = None):
+        if not _direction:
+            _direction = 0
         if _shape == 'Sector':
             tmp = []
             tmp.append(_latlong)
