@@ -4,9 +4,6 @@ from difflib import get_close_matches
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-keywords = ('Index','eNodeB Id','Lat','Long', 'Cell Id', 'Sector Id','EARFCN','TAL','TAI')
-
-
 
 class RFDataBase():
     """Define a Object for RF Data Base
@@ -54,7 +51,7 @@ class RFDataBase():
         for i in range(5):
             s = 0
             str_match = [str(self.rf_sheet.row_values(i)[x]) for x in range(len(self.rf_sheet.row_values(i)))]
-            for key in keywords:
+            for key in self.RFIndex:
                 a = get_close_matches(key,str_match)
                 s += len(a)
             if s > max_match:
