@@ -78,7 +78,7 @@ class RFKml():
             else:
                 logging.debug("Missing information for cell %s, create cell failed." % cell_index)
 
-        kml.save('D:\\123.kml')
+        kml.save('./123.kmz')
 
     def calc_latlong(self, _shape = 'Circle', _direction = 0, _latlong = None, _height = 0):
         if not _direction:

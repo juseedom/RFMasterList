@@ -153,7 +153,7 @@ class Ui_MainWindow(object):
             rf_item["PCI"] = ['0', '1', '2']
 
             kml_item = dict()
-            kml_item["Shape"] = ("Sector", "Circle")
+            kml_item["Shape"] = (("Sector","0.001265","0"), ("Circle","0,000253","0"))
             kml_item["Line Color"] = list()
             kml_item["Fill Color"] = list()
 
@@ -166,11 +166,11 @@ class Ui_MainWindow(object):
 
     def updateRuleTable(self, setTable):
         setTable.clear()
-        for i, rule in enumerate(self.rules):
-            kml_Item = QtGui.QTableWidgetItem(rule[1])
-            rf_Item = QtGui.QTableWidgetItem(rule[0])
+        for i, rule_type in enumerate(self.rules):
+            kml_Item = QtGui.QTableWidgetItem(rule_type[1])
+            rf_Item = QtGui.QTableWidgetItem(rule_type[0])
             pub_options = QtGui.QPushButton('...')
-            pub_options.clicked.connect(partial(self.tab_set_options, rule, self.rules[rule]))
+            pub_options.clicked.connect(partial(self.tab_set_options, rule_type, self.rules[rule_type]))
             pub_remove = QtGui.QPushButton('Remove')
             pub_remove.clicked.connect(partial(self.tab_set_remove,i))
             setTable.setItem(i,0,rf_Item)
@@ -278,8 +278,8 @@ class Ui_MainWindow(object):
         
         #self.tabWidget.setTabEnabled(1,False)
 
-    def tab_set_options(self, rule, rule_value):
-        kml_type = rule[1]
+    def tab_set_options(self, rule_type, rule_value):
+        kml_type = rule_type[1]
         #print kml_type
         if kml_type.find("Color") != -1:
             self.set_options('Color', rule_value)
@@ -300,26 +300,37 @@ class Ui_MainWindow(object):
         elif set_type == 'Shape':
             shape_dialog = QtGui.QDialog()
             shape_dialog.setModal(True)
-            shape_dialog.resize(275,270)
+            shape_dialog.resize(410,270)
             shape_dialog.setWindowTitle(set_type)
 
-            shape_table = QtGui.QTableWidget(len(rule_value),2,shape_dialog)
-            shape_table.horizontalHeader().setVisible(False)
+            shape_table = QtGui.QTableWidget(len(rule_value),4,shape_dialog)
+            shape_table.horizontalHeader().setVisible(True)
+            shape_table.setHorizontalHeaderLabels(("RF_Value", "Shape", "Radius(m)", "Height"))
             shape_table.verticalHeader().setVisible(False)
-            shape_table.resize(270, 270)
-            shape_table.setEditTriggers(QtGui.QAbstractItemView.NoEditTriggers)
+            shape_table.resize(410, 270)
 
             for i, rf_value in enumerate(rule_value):
                 nameItem = QtGui.QTableWidgetItem(rf_value)
+                nameItem.setFlags(QtCore.Qt.NoItemFlags)
                 #shapeItem = QtGui.QTableWidgetItem()
                 comboShape = QtGui.QComboBox()
-                comboShape.addItems(rule_value.values())
+                comboShape.addItems([a if type(a)==str else a[0] for a in rule_value.values()])
+                
+                radiusItem = QtGui.QTableWidgetItem(rule_value[rf_value][1])
+                radiusItem.setFlags(QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                #radiusItem.itemchanged
+                heightItem = QtGui.QTableWidgetItem(rule_value[rf_value][2])
+                heightItem.setFlags(QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                
+                
                 comboShape.setCurrentIndex(i)
                 shape_table.setItem(i, 0, nameItem)
-                shape_table.setCellWidget(i, 1, comboShape)
+                shape_table.setCellWidget(i, 1, comboShape)                
+                shape_table.setItem(i, 2, radiusItem)
+                shape_table.setItem(i, 3, heightItem)
 
                 comboShape.currentIndexChanged.connect(partial(self.updateTable, rule_value, rf_value, comboShape))
-
+                
             #shape_table.resizeColumnToContents(True)
             #shape_table.horizontalHeader().setStretchLastSection(True)
 
@@ -331,6 +342,8 @@ class Ui_MainWindow(object):
     def updateTable(self, str_dict, str_key, comboxObj):
         new_value = {str_key:str(comboxObj.currentText())}
         str_dict.update(new_value)
+    def updateValue(self):
+        pass
 
 
 
