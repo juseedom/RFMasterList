@@ -31,40 +31,21 @@ class RFKml():
         self.supportOptions = (("EARFCN", "PCI", "Type"), ("Shape", "Fill Color", "Line Color"))
 
     
-    def _calc_sec(self, _direction, _radius, _latlong):
-        result = [0,0]
+    def _calc_sec(self, _direction, _radius, _latlong, _height = 0):
+        result = [0,0,0]
         try:
             #Longitude, Latitude
             result[0] = _latlong[0] + _radius * sin(_direction/180.0*pi)
             result[1] = _latlong[1] + _radius * cos(_direction/180.0*pi)
+            result[2] = _height
         except:
             logging.debug('Calc Lat/long Error for %s %s %s' %(_direction, _radius, _latlong))
         finally:
             return result
         
-    
-    def cellShape(self, _shape, _direction, _latlong):
-        """
-        according to requested shape to return latlong boundary line
-        """
-        if _shape == 'Sector':
-            tmp = []
-            tmp.append(_latlong)
-            for ang_step in range(0,self.beamwidth+self.preciousDeg,self.preciousDeg):
-                tmp.append(self._calc_sec((ang_step+_direction-self.beamwidth/2)%360,self.radius,_latlong))
-            tmp.append(_latlong)
-            return tmp
-        elif _shape == 'Circle':
-            tmp = []
-            for ang_step in range(0, 360, self.preciousDeg):
-                tmp.append(self._calc_sec(ang_step,self.radius/self.radiusFactor,_latlong))
-            return tmp
-        else:
-            return False
-
-
     def createCells(self, RFDB, map_title = None):
         kml = simplekml.Kml()
+
 
         #fol_site = kml.newfolder(name = 'Site')
         fol_cell = kml.newfolder(name = 'Cell')
@@ -85,9 +66,9 @@ class RFKml():
 
 
             if cell_info["Latitude"] and cell_info["Longitude"]:
-                
-                draw_cell = fol_cell.newpolygon(name = cell_index, \
-                    outerboundaryis = self.calc_latlong(cell_type["Shape"], cell_info["Azimuth"], (cell_info["Longitude"],cell_info["Latitude"])),\
+                cell_height = 0
+                draw_cell = fol_cell.newpolygon(name = cell_index, altitudemode = 'relativeToGround', extrude = 1,\
+                    outerboundaryis = self.calc_latlong(cell_type["Shape"], cell_info["Azimuth"], (cell_info["Longitude"],cell_info["Latitude"]), cell_height),\
                     description = "\n".join(str(cell_info).split(",")) \
                     )
                 transferColor = lambda s: "ff"+s[1:] if s.find("#") != -1 else getattr(simplekml.Color, s)
@@ -97,9 +78,9 @@ class RFKml():
             else:
                 logging.debug("Missing information for cell %s, create cell failed." % cell_index)
 
-        kml.savekmz('D:\\123.kmz')
+        kml.save('D:\\123.kml')
 
-    def calc_latlong(self, _shape = 'Circle', _direction = 0, _latlong = None):
+    def calc_latlong(self, _shape = 'Circle', _direction = 0, _latlong = None, _height = 0):
         if not _direction:
             _direction = 0
         if _shape == 'Sector':
@@ -136,7 +117,8 @@ if __name__ == '__main__':
     rf_kml = RFKml()
     test = RFDataBase()
     test.readFile(".\\RF_MasterList20140207.xls")
-    test.readSheet(0)
+    test.readTitle()
+    test.readSheet({"Index":"Index", "EARFCN":"EARFCN", "Type":"Type", "PCI":"PCI"})
     rules = {("EARFCN", "Fill Color"):{"1850":"red", "2970":"blue", "1800":"green"},
             ("Type", "Shape"):{"Indoor":"Circle", "Outdoor":"Sector"},
             ("PCI", "Line Color"):{"1":"blue", "2":"#dc143c", "0":"yellow"}
