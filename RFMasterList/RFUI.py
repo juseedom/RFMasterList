@@ -153,14 +153,14 @@ class Ui_MainWindow(object):
             rf_item["PCI"] = ['0', '1', '2']
 
             kml_item = dict()
-            kml_item["Shape"] = (("Sector","0.001265","0"), ("Circle","0,000253","0"))
+            kml_item["Shape"] = [["Circle","0.00025","20"],["Sector","0.001265","10"]]
             kml_item["Line Color"] = list()
             kml_item["Fill Color"] = list()
 
             self.rules = dict()
             
             self.rules[("EARFCN", "Fill Color")] = dict().fromkeys(rf_item["EARFCN"], "blue")
-            self.rules[("PCI", "Line Color")] = dict().fromkeys(rf_item["PCI"], "blue")
+            self.rules[("PCI", "Line Color")] = dict().fromkeys(rf_item["PCI"], "red")
             self.rules[("Type", "Shape")] = dict(zip(rf_item["Type"],kml_item["Shape"]))
             self.updateRuleTable(setTable)
 
@@ -318,19 +318,19 @@ class Ui_MainWindow(object):
                 
                 radiusItem = QtGui.QTableWidgetItem(rule_value[rf_value][1])
                 radiusItem.setFlags(QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                                
                 #radiusItem.itemchanged
                 heightItem = QtGui.QTableWidgetItem(rule_value[rf_value][2])
                 heightItem.setFlags(QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                
-                
+                                
                 comboShape.setCurrentIndex(i)
                 shape_table.setItem(i, 0, nameItem)
                 shape_table.setCellWidget(i, 1, comboShape)                
                 shape_table.setItem(i, 2, radiusItem)
                 shape_table.setItem(i, 3, heightItem)
 
-                comboShape.currentIndexChanged.connect(partial(self.updateTable, rule_value, rf_value, comboShape))
-                
+                #comboShape.currentIndexChanged.connect(partial(self.updateTable, rule_value[rf_value], rf_value, comboShape))
+            shape_table.itemChanged.connect(partial(self.updateValue, shape_table, rule_value))
             #shape_table.resizeColumnToContents(True)
             #shape_table.horizontalHeader().setStretchLastSection(True)
 
@@ -339,13 +339,26 @@ class Ui_MainWindow(object):
             shape_dialog.exec_()
 
 
-    def updateTable(self, str_dict, str_key, comboxObj):
+    def updateTable(self, str_dict, str_key, comboxObj, *args):
         new_value = {str_key:str(comboxObj.currentText())}
         str_dict.update(new_value)
-    def updateValue(self):
-        pass
-
-
+        
+    def updateValue(self, widgetTable, rule_value):
+        i = widgetTable.currentRow()
+        j = widgetTable.currentColumn()
+        rf_value = str(widgetTable.item(i,0).text())
+        if j == 1:
+            rule_value[rf_value][0] = str(widgetTable.currentItem.currentText())
+        else:
+            new_value = str(widgetTable.currentItem().text())
+            if new_value.replace(".","",1).isdigit():
+                rule_value[rf_value][j-1] = new_value
+            else:
+                widgetTable.currentItem().setText(rule_value[rf_value][j-1])
+                msgBox = QtGui.QMessageBox()
+                msgBox.setWindowTitle("Warning")
+                msgBox.setText("Please Input a Valid Number!")
+                msgBox.exec_()
 
     def tab_set_remove(self,i):
         #self.setTable.removeRow(i)

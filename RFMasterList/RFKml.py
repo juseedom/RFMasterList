@@ -21,8 +21,8 @@ class RFKml():
         
         """
         self.preciousDeg = 5
-        self.radius = 0.001265
-        self.radiusFactor = 5
+        #self.radius = 0.001265
+        #self.radiusFactor = 5
         self.beamwidth = 35
         self.transparent = 6
 
@@ -54,21 +54,21 @@ class RFKml():
         #fol_site.style.iconstyle.icon.href = u'http://maps.google.com/mapfiles/kml/shapes/campground.png'
 
         for cell_index, cell_info in zip(RFDB.keys(),RFDB.values()):
+            #create cell types cell_type["Shape"] = "Sector", "0.1", "10"
             cell_type = dict()
             for rule_type, rule_value in zip(self.rules.keys(), self.rules.values()):
                 if rule_type[0] == "PCI":
                     cell_type[rule_type[1]] = rule_value[str(int(cell_info[rule_type[0]])%3)]
-                elif rule_type[0] == "EARFCN":
+                elif rule_type[0] == "EARFCN" or rule_type[0] == "Azimuth":
                     cell_type[rule_type[1]] = rule_value[str(cell_info[rule_type[0]]).split(".")[0]]
                 else:
                     cell_type[rule_type[1]] = rule_value[cell_info[rule_type[0]]]
             #logging.debug("Create cell type for %s : %s" %(cell_index, cell_type))
 
-
+            #need to add mat_table here
             if cell_info["Latitude"] and cell_info["Longitude"]:
-                cell_height = 0
                 draw_cell = fol_cell.newpolygon(name = cell_index, altitudemode = 'relativeToGround', extrude = 1,\
-                    outerboundaryis = self.calc_latlong(cell_type["Shape"], cell_info["Azimuth"], (cell_info["Longitude"],cell_info["Latitude"]), cell_height),\
+                    outerboundaryis = self.calc_latlong(cell_type["Shape"], int(cell_info["Azimuth"]), (cell_info["Longitude"],cell_info["Latitude"])),\
                     description = "\n".join(str(cell_info).split(",")) \
                     )
                 transferColor = lambda s: "ff"+s[1:] if s.find("#") != -1 else getattr(simplekml.Color, s)
@@ -78,22 +78,20 @@ class RFKml():
             else:
                 logging.debug("Missing information for cell %s, create cell failed." % cell_index)
 
-        kml.save('./123.kmz')
+        kml.save('d:\\123.kml')
 
-    def calc_latlong(self, _shape = 'Circle', _direction = 0, _latlong = None, _height = 0):
-        if not _direction:
-            _direction = 0
-        if _shape == 'Sector':
+    def calc_latlong(self, _shape = ('Circle','0.001265',"0"), _direction = 0, _latlong = None):
+        if _shape[0] == 'Sector':
             tmp = []
-            tmp.append(_latlong)
+            tmp.append(_latlong+(_shape[2],))
             for ang_step in range(0,self.beamwidth+self.preciousDeg,self.preciousDeg):
-                tmp.append(self._calc_sec((ang_step+_direction-self.beamwidth/2)%360,self.radius,_latlong))
-            tmp.append(_latlong)
+                tmp.append(self._calc_sec((ang_step+_direction-self.beamwidth/2)%360,float(_shape[1]),_latlong,float(_shape[2])))
+            tmp.append(_latlong+(_shape[2],))
             return tmp
-        elif _shape == 'Circle':
+        elif _shape[0] == 'Circle':
             tmp = []
             for ang_step in range(0, 360, self.preciousDeg):
-                tmp.append(self._calc_sec(ang_step,self.radius/5,_latlong))
+                tmp.append(self._calc_sec(ang_step,float(_shape[1]),_latlong,float(_shape[2])))
             return tmp
         else:
             return False
