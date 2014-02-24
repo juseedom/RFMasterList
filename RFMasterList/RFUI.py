@@ -153,7 +153,10 @@ class Ui_MainWindow(object):
             rf_item["PCI"] = ['0', '1', '2']
 
             kml_item = dict()
-            kml_item["Shape"] = [["Circle","0.00025","20"],["Sector","0.001265","10"]]
+            kml_item["Shape"] = ["Circle", "Sector"]
+            kml_item["Cell Radius"] = ["0.00025", "0.001265"]
+            kml_item["Height"] = list()
+            #kml_item["Shape"] = [["Circle","0.00025","20"],["Sector","0.001265","10"]]
             kml_item["Line Color"] = list()
             kml_item["Fill Color"] = list()
 
@@ -162,10 +165,13 @@ class Ui_MainWindow(object):
             self.rules[("EARFCN", "Fill Color")] = dict().fromkeys(rf_item["EARFCN"], "blue")
             self.rules[("PCI", "Line Color")] = dict().fromkeys(rf_item["PCI"], "red")
             self.rules[("Type", "Shape")] = dict(zip(rf_item["Type"],kml_item["Shape"]))
+            self.rules[("Type", "Cell Radius")] = dict(zip(rf_item["Type"],kml_item["Cell Radius"]))
+            self.rules[("EARFCN", "Height")] = dict().fromkeys(rf_item["EARFCN"], "0")
             self.updateRuleTable(setTable)
 
     def updateRuleTable(self, setTable):
         setTable.clear()
+        setTable.setRowCount(len(self.rules))
         for i, rule_type in enumerate(self.rules):
             kml_Item = QtGui.QTableWidgetItem(rule_type[1])
             rf_Item = QtGui.QTableWidgetItem(rule_type[0])
@@ -264,7 +270,7 @@ class Ui_MainWindow(object):
         qcb_type.addItems(KML_options)
         qcb_value.addItems(RF_type)
         #need to update this value after changed default rule number
-        setTable = QtGui.QTableWidget(3,4,self.tab_set)
+        setTable = QtGui.QTableWidget(1,4,self.tab_set)
         setTable.horizontalHeader().setVisible(False)
         setTable.verticalHeader().setVisible(True)
         setTable.setGeometry(QtCore.QRect(40, 50, 500, 200))
@@ -280,62 +286,47 @@ class Ui_MainWindow(object):
 
     def tab_set_options(self, rule_type, rule_value):
         kml_type = rule_type[1]
-        #print kml_type
-        if kml_type.find("Color") != -1:
-            self.set_options('Color', rule_value)
-        elif kml_type.find('Shape') != -1:
-            self.set_options('Shape', rule_value)
-        else:
-            pass
-
-    def set_options(self, set_type, rule_value):
-        if set_type == 'Color':            
+        if kml_type.find('Color') != -1:            
             color_dialog = QtGui.QDialog()
             color_dialog.setModal(True)
             color_factory = coloreditorfactory.Window(color_dialog,rule_value)
             color_dialog.resize(275,270)
-            color_dialog.setWindowTitle(set_type)
+            color_dialog.setWindowTitle(kml_type)
             color_factory.show()
             color_dialog.exec_()
-        elif set_type == 'Shape':
+        else:
             shape_dialog = QtGui.QDialog()
             shape_dialog.setModal(True)
             shape_dialog.resize(410,270)
-            shape_dialog.setWindowTitle(set_type)
-
-            shape_table = QtGui.QTableWidget(len(rule_value),4,shape_dialog)
+            shape_dialog.setWindowTitle(kml_type)
+            
+            shape_table = QtGui.QTableWidget(len(rule_value),2,shape_dialog)
             shape_table.horizontalHeader().setVisible(True)
-            shape_table.setHorizontalHeaderLabels(("RF_Value", "Shape", "Radius(m)", "Height"))
+            shape_table.setHorizontalHeaderLabels(("RF_Value", kml_type))
             shape_table.verticalHeader().setVisible(False)
             shape_table.resize(410, 270)
-
             for i, rf_value in enumerate(rule_value):
                 nameItem = QtGui.QTableWidgetItem(rf_value)
                 nameItem.setFlags(QtCore.Qt.NoItemFlags)
-                #shapeItem = QtGui.QTableWidgetItem()
-                comboShape = QtGui.QComboBox()
-                comboShape.addItems([a if type(a)==str else a[0] for a in rule_value.values()])
-                
-                radiusItem = QtGui.QTableWidgetItem(rule_value[rf_value][1])
-                radiusItem.setFlags(QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                                
-                #radiusItem.itemchanged
-                heightItem = QtGui.QTableWidgetItem(rule_value[rf_value][2])
-                heightItem.setFlags(QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                                
-                comboShape.setCurrentIndex(i)
                 shape_table.setItem(i, 0, nameItem)
-                shape_table.setCellWidget(i, 1, comboShape)                
-                shape_table.setItem(i, 2, radiusItem)
-                shape_table.setItem(i, 3, heightItem)
+                #shapeItem = QtGui.QTableWidgetItem()
+                if kml_type.find('Shape') != -1:
+                    opt_item = QtGui.QComboBox()
+                    opt_item.addItems([a if type(a)==str else a[0] for a in rule_value.values()])
+                    opt_item.setCurrentIndex(i)
+                    shape_table.setCellWidget(i, 1, opt_item)
+                else:
+                    print rule_value[rf_value]
+                    opt_item = QtGui.QTableWidgetItem(rule_value[rf_value])
+                    opt_item.setFlags(QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                    shape_table.setItem(i, 1, opt_item)
 
                 #comboShape.currentIndexChanged.connect(partial(self.updateTable, rule_value[rf_value], rf_value, comboShape))
-            shape_table.itemChanged.connect(partial(self.updateValue, shape_table, rule_value))
+            shape_table.itemChanged.connect(partial(self.updateValue, shape_table, kml_type, rule_value))
             #shape_table.resizeColumnToContents(True)
             #shape_table.horizontalHeader().setStretchLastSection(True)
-
             #shape_dialog.resize(275,270)
-            shape_dialog.setWindowTitle(set_type)
+            shape_dialog.setWindowTitle(kml_type)
             shape_dialog.exec_()
 
 
@@ -343,18 +334,17 @@ class Ui_MainWindow(object):
         new_value = {str_key:str(comboxObj.currentText())}
         str_dict.update(new_value)
         
-    def updateValue(self, widgetTable, rule_value):
+    def updateValue(self, widgetTable, kml_type, rule_value):
         i = widgetTable.currentRow()
-        j = widgetTable.currentColumn()
         rf_value = str(widgetTable.item(i,0).text())
-        if j == 1:
+        if kml_type.find("Shape") != -1:
             rule_value[rf_value][0] = str(widgetTable.currentItem.currentText())
         else:
             new_value = str(widgetTable.currentItem().text())
             if new_value.replace(".","",1).isdigit():
-                rule_value[rf_value][j-1] = new_value
+                rule_value[rf_value] = new_value
             else:
-                widgetTable.currentItem().setText(rule_value[rf_value][j-1])
+                widgetTable.currentItem().setText(rule_value[rf_value])
                 msgBox = QtGui.QMessageBox()
                 msgBox.setWindowTitle("Warning")
                 msgBox.setText("Please Input a Valid Number!")

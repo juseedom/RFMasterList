@@ -120,11 +120,13 @@ class Window(QtGui.QWidget):
 
     def updateTable(self,dictData):
         irow = self.table.currentRow()
-        print irow
         rf_value = str(self.table.item(irow,0).text())
         #change Qtext to Qcolor later
         dictData.update({rf_value: str(self.table.item(irow,1).text())})
-        logging.debug(dictData)
+        #logging.debug(dictData)
+
+
+
 
 
 if __name__ == '__main__':

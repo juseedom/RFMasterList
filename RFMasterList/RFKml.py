@@ -68,7 +68,7 @@ class RFKml():
             #need to add mat_table here
             if cell_info["Latitude"] and cell_info["Longitude"]:
                 draw_cell = fol_cell.newpolygon(name = cell_index, altitudemode = 'relativeToGround', extrude = 1,\
-                    outerboundaryis = self.calc_latlong(cell_type["Shape"], int(cell_info["Azimuth"]), (cell_info["Longitude"],cell_info["Latitude"])),\
+                    outerboundaryis = self.calc_latlong(cell_type["Shape"],cell_type["Cell Radius"], cell_type["Height"], int(cell_info["Azimuth"]), (cell_info["Longitude"],cell_info["Latitude"])),\
                     description = "\n".join(str(cell_info).split(",")) \
                     )
                 transferColor = lambda s: "ff"+s[1:] if s.find("#") != -1 else getattr(simplekml.Color, s)
@@ -78,20 +78,21 @@ class RFKml():
             else:
                 logging.debug("Missing information for cell %s, create cell failed." % cell_index)
 
-        kml.save('d:\\123.kml')
+        kml.save('123.kml')
+        kml.savekmz('123.kmz')
 
-    def calc_latlong(self, _shape = ('Circle','0.001265',"0"), _direction = 0, _latlong = None):
-        if _shape[0] == 'Sector':
+    def calc_latlong(self, _shape ='Circle',_cellRadius = '0.001265',_height = "0", _direction = 0, _latlong = None):
+        if _shape == 'Sector':
             tmp = []
-            tmp.append(_latlong+(_shape[2],))
+            tmp.append(_latlong+(_height,))
             for ang_step in range(0,self.beamwidth+self.preciousDeg,self.preciousDeg):
-                tmp.append(self._calc_sec((ang_step+_direction-self.beamwidth/2)%360,float(_shape[1]),_latlong,float(_shape[2])))
-            tmp.append(_latlong+(_shape[2],))
+                tmp.append(self._calc_sec((ang_step+_direction-self.beamwidth/2)%360,float(_cellRadius),_latlong,float(_height)))
+            tmp.append(_latlong+(_height,))
             return tmp
-        elif _shape[0] == 'Circle':
+        elif _shape == 'Circle':
             tmp = []
             for ang_step in range(0, 360, self.preciousDeg):
-                tmp.append(self._calc_sec(ang_step,float(_shape[1]),_latlong,float(_shape[2])))
+                tmp.append(self._calc_sec(ang_step,float(_cellRadius),_latlong,float(_height)))
             return tmp
         else:
             return False
@@ -103,7 +104,7 @@ class RFKml():
             rf_value = rule_value.keys()
             kml_value = rule_value.values()
             print rf_type, kml_type, rf_value, kml_value
-            if kml_type in ("Fill Color", "Line Color", "Shape"):
+            if kml_type in ("Fill Color", "Line Color", "Shape", "Cell Radius", "Height"):
                 self.rules.update({(rf_type, kml_type):dict(zip(rf_value, kml_value))})
                 logging.debug("Add rules successfully for %s and %s." %(rf_type, kml_type))
             else:
