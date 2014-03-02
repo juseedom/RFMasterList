@@ -82,17 +82,15 @@ class ColorListItemEditorCreator(QtGui.QItemEditorCreatorBase):
 class Window(QtGui.QWidget):
     def __init__(self, parent=None, dictData=None):
         super(Window, self).__init__(parent)
-
         factory = QtGui.QItemEditorFactory()
         factory.registerEditor(QtCore.QVariant.Color,
                 ColorListItemEditorCreator())
         QtGui.QItemEditorFactory.setDefaultFactory(factory)
 
         self.createGUI(dictData)
-
+        
 
     def createGUI(self, dictData):
-        print dictData
         self.table = QtGui.QTableWidget(len(dictData), 2)
         self.table.horizontalHeader().setVisible(False)
         self.table.verticalHeader().setVisible(False)

@@ -29,6 +29,7 @@ class RFKml():
         self.rules = dict()
         
         self.supportOptions = (("EARFCN", "PCI", "Type"), ("Shape", "Fill Color", "Line Color"))
+        #self.supportOptions = {"Shape":("Circle","Sector)")}
 
     
     def _calc_sec(self, _direction, _radius, _latlong, _height = 0):

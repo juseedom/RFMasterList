@@ -14,6 +14,7 @@ class RFDataBase():
     def __init__(self):
         self.DB = dict()
         self.RFIndex = ['Index','eNodeB Id','Latitude','Longitude','Sector Id','Cell Id','EARFCN','Azimuth','Type','PCI', 'TAI']
+        self.tableTitle = dict()
 
             
     def readFile(self, filepath):
@@ -66,7 +67,8 @@ class RFDataBase():
     def readSheet(self, table_title):
         #read title
         #match index or cell name and check duplicate
-        #transfer all number to float, str otherwise        
+        #transfer all number to float, str otherwise 
+        self.tableTitle = table_title      
         title_index = self.str_title.index(table_title["Index"])
         str_index = self.rf_sheet.col_values(title_index)[self.start_row+1:]
         if [b for b in str_index if str_index.count(b)>1]:
@@ -104,16 +106,16 @@ class RFDataBase():
         """
 
         logging.debug("Start to statistics for %s" %dedicate_index)
-        dedicate_value = set([raw_data[dedicate_index] for raw_data in self.DB.values()])
+        table_index = self.tableTitle[dedicate_index]
+        dedicate_value = set([raw_data[table_index] for raw_data in self.DB.values()])
         
 
         if dedicate_index in ("EARFCN"):
-            logging.debug("Start to stransfer All EARFCN value into int")
+            logging.debug("Start to transfer All EARFCN value into int")
             #dedicate_value = set([float(i) for i in dedicate_value])
             dedicate_value = set([str(int(i)) for i in dedicate_value])
-
+            
         return dedicate_value
-
 
     def Update2File(self):
         pass
