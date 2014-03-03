@@ -313,15 +313,18 @@ class Ui_MainWindow(object):
                     opt_item.currentIndexChanged.connect(partial(self._updateTableValue, rf_value, opt_item, rule_value))
                     
                 else:
-                    opt_item = QtGui.QLineEdit()
-                    opt_item.setText(rule_value[rf_value])
-                    shape_table.setCellWidget(i, 1, opt_item)
-                    opt_item.textChanged.connect(partial(self._updateTableValue,rf_value, opt_item, rule_value))
-            #shape_table.itemChanged.connect(partial(self._catchCurrentItem, shape_table, rule_value))            
+                    #opt_item = QtGui.QLineEdit()
+                    opt_item = QtGui.QTableWidgetItem(rule_value[rf_value])
+                    #opt_item.setText(rule_value[rf_value])
+                    #shape_table.setCellWidget(i, 1, opt_item)
+                    shape_table.setItem(i, 1, opt_item)
+                    #opt_item.textChanged.connect(partial(self._updateTableValue,rf_value, opt_item, rule_value))
+            shape_table.itemChanged.connect(partial(self._catchCurrentItem, shape_table, rule_value))            
 
             shape_dialog.setWindowTitle(kml_type)
             shape_dialog.exec_()
-    
+    def _catchCurrentItem(self, shape_table, rule_value):
+        self._updateTableValue(str(shape_table.item(shape_table.currentRow(),0).text()), shape_table.currentItem(), rule_value)
     def _updateTableValue(self, str_key, cellItem, des_dict):
         #cellItem can be anytype of cellwidgetItem, des_dict is dict for store value
         #default widgetTable is only 2 column, 1st for key of dict, 2nd for value of dict

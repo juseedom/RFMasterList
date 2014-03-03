@@ -82,10 +82,12 @@ class ColorListItemEditorCreator(QtGui.QItemEditorCreatorBase):
 class Window(QtGui.QWidget):
     def __init__(self, parent=None, dictData=None):
         super(Window, self).__init__(parent)
+        self.delegate = QtGui.QStyledItemDelegate(self)
         factory = QtGui.QItemEditorFactory()
         factory.registerEditor(QtCore.QVariant.Color,
                 ColorListItemEditorCreator())
-        QtGui.QItemEditorFactory.setDefaultFactory(factory)
+        self.delegate.setItemEditorFactory(factory)
+        #QtGui.QItemEditorFactory.setDefaultFactory(factory)
 
         self.createGUI(dictData)
         
@@ -106,6 +108,7 @@ class Window(QtGui.QWidget):
                 colorItem.setData(QtCore.Qt.DisplayRole, QtGui.QColor('aliceblue'))
             self.table.setItem(i, 0, nameItem)
             self.table.setItem(i, 1, colorItem)
+        self.table.setItemDelegateForColumn(1, self.delegate)
         self.table.itemChanged.connect(partial(self.updateTable,dictData))
 
         self.table.resizeColumnToContents(1)
