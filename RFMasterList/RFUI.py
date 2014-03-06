@@ -30,6 +30,7 @@ import sys, os
 sys.path.append(os.path.abspath(os.curdir))
 from RFDB import RFDataBase
 from RFKml import RFKml
+from Logging import RFLogging
 import coloreditorfactory
 
 import logging
@@ -231,6 +232,8 @@ class Ui_MainWindow(object):
         if self.tabWidget.currentIndex() == 1 and self.int_status == 12:
             #build default rules
             rf_item = dict()
+            self.rf_log = RFLogging()
+            
             #read maptitle and RFDB
             self.RFDB.readSheet(self.map_title)
             #change to tab_setting, do KPI statistics now
@@ -247,12 +250,15 @@ class Ui_MainWindow(object):
             kml_item["Fill Color"] = list()
 
             self.rules = dict()
-            
-            self.rules[("EARFCN", "Fill Color")] = dict().fromkeys(rf_item["EARFCN"], "blue")
+            self.rules[("EARFCN", "Fill Color")] = dict().fromkeys(rf_item["EARFCN"], "red")
             self.rules[("PCI", "Line Color")] = dict().fromkeys(rf_item["PCI"], "red")
             self.rules[("Type", "Shape")] = dict.fromkeys(rf_item["Type"],"Circle")
             self.rules[("Type", "Cell Radius")] = dict(zip(rf_item["Type"],kml_item["Cell Radius"]))
             self.rules[("EARFCN", "Height")] = dict().fromkeys(rf_item["EARFCN"], "0")
+            
+            for rule_type in self.rf_log.rules:
+                self.rules[rule_type].update(self.rf_log.rules[rule_type])
+
             self.updateRuleTable(setTable)
             
             self.int_status = 32
@@ -371,8 +377,10 @@ class Ui_MainWindow(object):
 
     def calc(self):
         #try:
-        
+        if self.rf_log.writeRuleToCfg(self.rules):
+            logging.debug("Setting Records Successfully")
         self.rf_kml.createRules(self.rules)
+        
         self.rf_kml.createCells(self.RFDB.DB, self.map_title)
             #tittle.append(self.tbl_mTitle.item(i,1).currentText())
             #tittle[tableData[i]] = self.strTitle.index(self.tbl_mTitle.cellWidget(i,1).currentText())

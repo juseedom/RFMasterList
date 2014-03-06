@@ -12,16 +12,13 @@ class RFLogging():
         Existed - read CFG;
         NOT existed - create a CFG with initial values
         """
+        self.rules = dict()   
         #currentpath = os.path.dirname(os.path.abspath(__file__))
         if os.path.isfile("Excel2KML.cfg"):
             #read configuration
             with open("Excel2KML.cfg", "rb") as configfile:
                 self.readRuleFromCfg(configfile)
-
-        else:
-            self.createDefaultRule()
-            self.writeRuleToCfg()
-         
+            
          
     def createDefaultRule(self):
         #build default rules
@@ -49,8 +46,9 @@ class RFLogging():
         self.rules[("Type", "Cell Radius")] = dict(zip(rf_item["Type"],kml_item["Cell Radius"]))
         self.rules[("EARFCN", "Height")] = dict().fromkeys(rf_item["EARFCN"], "0")
     
-    def writeRuleToCfg(self):
+    def writeRuleToCfg(self, rules):
         try:
+            self.rules = rules
             self.config = ConfigParser.RawConfigParser()
             self.config.add_section("RuleType")
             self.config.add_section("RuleValue")
@@ -65,8 +63,7 @@ class RFLogging():
             logging.debug("Write Rule to CFG file failed, pls check CFG file")
             return False            
                 
-        
-                
+              
     def readRuleFromCfg(self, configfile):
         try:
             self.config = ConfigParser.RawConfigParser()

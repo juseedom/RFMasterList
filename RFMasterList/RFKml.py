@@ -46,11 +46,8 @@ class RFKml():
         
     def createCells(self, RFDB, map_title = None):
         kml = simplekml.Kml()
-
-
         #fol_site = kml.newfolder(name = 'Site')
         fol_cell = kml.newfolder(name = 'Cell')
-
         #fol_site.style = simplekml.Style(iconstyle = simplekml.IconStyle(scale = 0.4))
         #fol_site.style.iconstyle.icon.href = u'http://maps.google.com/mapfiles/kml/shapes/campground.png'
 
@@ -72,15 +69,16 @@ class RFKml():
                     outerboundaryis = self.calc_latlong(cell_type["Shape"],cell_type["Cell Radius"], cell_type["Height"], int(cell_info["Azimuth"]), (cell_info["Longitude"],cell_info["Latitude"])),\
                     description = "\n".join(str(cell_info).split(",")) \
                     )
-                transferColor = lambda s: "ff"+s[1:] if s.find("#") != -1 else getattr(simplekml.Color, s)
+                transferColor = lambda s: simplekml.Color.rgb(int(s[1:3],16), int(s[3:5],16), int(s[5:7],16)) if s.find("#") != -1 else getattr(simplekml.Color, s)
                 draw_cell.style = simplekml.Style(linestyle = simplekml.LineStyle(width =2, color = str(self.transparent)+transferColor(cell_type["Line Color"])[1:]),\
-                                polystyle = simplekml.PolyStyle(color =str(self.transparent)+ transferColor(cell_type["Fill Color"])[1:]))
-                
+                                polystyle = simplekml.PolyStyle(str(self.transparent) + transferColor(cell_type["Fill Color"])[1:]))
+               
             else:
                 logging.debug("Missing information for cell %s, create cell failed." % cell_index)
 
         kml.save('123.kml')
         kml.savekmz('123.kmz')
+        logging.debug("Create KML file successfully")
 
     def calc_latlong(self, _shape ='Circle',_cellRadius = '0.001265',_height = "0", _direction = 0, _latlong = None):
         if _shape == 'Sector':
@@ -116,7 +114,7 @@ class RFKml():
 if __name__ == '__main__':
     rf_kml = RFKml()
     test = RFDataBase()
-    test.readFile(".\\RF_MasterList20140207.xls")
+    test.readFile(".\\Test File\\RF_MasterList20140207.xls")
     test.readTitle()
     test.readSheet({"Index":"Index", "EARFCN":"EARFCN", "Type":"Type", "PCI":"PCI"})
     rules = {("EARFCN", "Fill Color"):{"1850":"red", "2970":"blue", "1800":"green"},
