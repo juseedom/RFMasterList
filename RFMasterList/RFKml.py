@@ -32,17 +32,15 @@ class RFKml():
         #self.supportOptions = {"Shape":("Circle","Sector)")}
 
     
-    def _calc_sec(self, _direction, _radius, _latlong, _height = 0):
-        result = [0,0,0]
+    def _calc_sec(self, _direction, _radius, _latlong):
         try:
             #Longitude, Latitude
-            result[0] = _latlong[0] + _radius * sin(_direction/180.0*pi)
-            result[1] = _latlong[1] + _radius * cos(_direction/180.0*pi)
-            result[2] = _height
+            a = _latlong[0] + _radius * sin(_direction/180.0*pi)
+            b = _latlong[1] + _radius * cos(_direction/180.0*pi)
         except:
             logging.debug('Calc Lat/long Error for %s %s %s' %(_direction, _radius, _latlong))
         finally:
-            return result
+            return (a,b)
         
     def createCells(self, RFDB, map_title = None):
         kml = simplekml.Kml()
@@ -65,36 +63,41 @@ class RFKml():
 
             #need to add mat_table here
             if cell_info["Latitude"] and cell_info["Longitude"]:
-                draw_cell = fol_cell.newpolygon(name = cell_index, altitudemode = 'relativeToGround', extrude = 1,\
-                    outerboundaryis = self.calc_latlong(cell_type["Shape"],cell_type["Cell Radius"], cell_type["Height"], int(cell_info["Azimuth"]), (cell_info["Longitude"],cell_info["Latitude"])),\
-                    description = "\n".join(str(cell_info).split(",")) \
-                    )
+                if cell_type["Height"] == "0":
+                    draw_cell = fol_cell.newpolygon(name = cell_index,\
+                        outerboundaryis = self.calc_latlong(cell_type["Shape"],cell_type["Cell Radius"],"0",int(cell_info["Azimuth"]), (cell_info["Longitude"],cell_info["Latitude"])),\
+                        description = "\n".join(str(cell_info).split(",")))                   
+                else:
+                    draw_cell = fol_cell.newpolygon(name = cell_index, altitudemode = 'relativeToGround', extrude = 1,\
+                        outerboundaryis = self.calc_latlong(cell_type["Shape"],cell_type["Cell Radius"], cell_type["Height"], int(cell_info["Azimuth"]), (cell_info["Longitude"],cell_info["Latitude"])),\
+                        description = "\n".join(str(cell_info).split(",")))
                 transferColor = lambda s: simplekml.Color.rgb(int(s[1:3],16), int(s[3:5],16), int(s[5:7],16)) if s.find("#") != -1 else getattr(simplekml.Color, s)
                 draw_cell.style = simplekml.Style(linestyle = simplekml.LineStyle(width =2, color = str(self.transparent)+transferColor(cell_type["Line Color"])[1:]),\
-                                polystyle = simplekml.PolyStyle(str(self.transparent) + transferColor(cell_type["Fill Color"])[1:]))
+                                polystyle = simplekml.PolyStyle(color = str(self.transparent) + transferColor(cell_type["Fill Color"])[1:]))
                
             else:
                 logging.debug("Missing information for cell %s, create cell failed." % cell_index)
 
-        kml.save('123.kml')
         kml.savekmz('123.kmz')
         logging.debug("Create KML file successfully")
 
     def calc_latlong(self, _shape ='Circle',_cellRadius = '0.001265',_height = "0", _direction = 0, _latlong = None):
+        #print _latlong
         if _shape == 'Sector':
-            tmp = []
-            tmp.append(_latlong+(_height,))
+            tmp = list()
+            tmp.append(_latlong)
             for ang_step in range(0,self.beamwidth+self.preciousDeg,self.preciousDeg):
-                tmp.append(self._calc_sec((ang_step+_direction-self.beamwidth/2)%360,float(_cellRadius),_latlong,float(_height)))
-            tmp.append(_latlong+(_height,))
-            return tmp
+                tmp.append(self._calc_sec((ang_step+_direction-self.beamwidth/2)%360,float(_cellRadius),_latlong))
+            tmp.append(_latlong)
         elif _shape == 'Circle':
             tmp = []
             for ang_step in range(0, 360, self.preciousDeg):
-                tmp.append(self._calc_sec(ang_step,float(_cellRadius),_latlong,float(_height)))
-            return tmp
+                tmp.append(self._calc_sec(ang_step,float(_cellRadius),_latlong))
         else:
             return False
+        if _height != "0":
+            tmp = [a+(_height,) for a in tmp]
+        return tmp
 
     def createRules(self, addrules):
         for rule_type, rule_value in zip(addrules.keys(), addrules.values()):
@@ -119,7 +122,8 @@ if __name__ == '__main__':
     test.readSheet({"Index":"Index", "EARFCN":"EARFCN", "Type":"Type", "PCI":"PCI"})
     rules = {("EARFCN", "Fill Color"):{"1850":"red", "2970":"blue", "1800":"green"},
             ("Type", "Shape"):{"Indoor":"Circle", "Outdoor":"Sector"},
-            ("PCI", "Line Color"):{"1":"blue", "2":"#dc143c", "0":"yellow"}
+            ("PCI", "Line Color"):{"1":"blue", "2":"#dc143c", "0":"yellow"},
+            ("EARFCN", "Height"):{"1850":"0", "2970":"0", "1800":"0"}
             }
     rf_kml.createRules(rules)
 
